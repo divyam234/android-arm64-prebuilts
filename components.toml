@@ -9,6 +9,15 @@ host = "aarch64-unknown-linux-gnu"
 notes = "Build with Google's Android Rust toolchain pipeline using native ARM64 stage0 Rust and AOSP ARM64 Clang."
 
 [[component]]
+name = "jdk8"
+destination = "prebuilts/jdk/jdk8/linux-arm64"
+source = "pinned external/native AArch64 JDK 8 distribution"
+method = "import"
+host = "aarch64-linux"
+major_version = 8
+notes = "Validated/imported into the AOSP-style JDK 8 path. The modern AOSP toolchain/jdk/build tree no longer carries a JDK 8 build wrapper."
+
+[[component]]
 name = "jdk21"
 destination = "prebuilts/jdk/jdk21/linux-arm64"
 source = "https://android.googlesource.com/toolchain/jdk/build"

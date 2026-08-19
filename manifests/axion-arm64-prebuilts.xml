@@ -35,9 +35,8 @@
            revision="mirror-goog-llvm-r596125-release" />
 
   <!--
-    Our monorepo is cloned once. linkfile supports directory symlink targets,
-    so repo sync exposes the two owned prebuilt trees at the paths expected by
-    Android without duplicating the Git repository.
+    Clone our monorepo once. Directory linkfile entries expose the owned
+    prebuilts at the paths expected by the Android build system.
   -->
   <project path="prebuilts/arm64-host"
            name="divyam234/android-arm64-prebuilts"
@@ -45,6 +44,8 @@
            revision="main">
     <linkfile src="prebuilts/rust-toolchain/linux-arm64"
               dest="prebuilts/rust-toolchain/linux-arm64" />
+    <linkfile src="prebuilts/jdk/jdk8/linux-arm64"
+              dest="prebuilts/jdk/jdk8/linux-arm64" />
     <linkfile src="prebuilts/jdk/jdk21/linux-arm64"
               dest="prebuilts/jdk/jdk21/linux-arm64" />
   </project>

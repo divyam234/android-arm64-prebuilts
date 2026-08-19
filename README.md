@@ -6,13 +6,15 @@ This repository stores the actual prebuilt trees in Git. Large binaries are trac
 
 ## Scope
 
-We only maintain prebuilts that are not already usable directly from AOSP:
+For now we maintain only the missing Rust host toolchain plus JDK 8 and JDK 21:
 
 ```text
 prebuilts/
 ├── rust-toolchain/
 │   └── linux-arm64/
 └── jdk/
+    ├── jdk8/
+    │   └── linux-arm64/
     └── jdk21/
         └── linux-arm64/
 ```
@@ -42,6 +44,18 @@ prebuilts/rust-toolchain/linux-arm64/
 
 See `scripts/build-rust.sh`.
 
+## JDK 8
+
+AOSP still carries `platform/prebuilts/jdk/jdk8`, but the current public `toolchain/jdk/build` checkout no longer carries the old JDK 8 build wrapper. For now we import a pinned native Linux AArch64 JDK 8 distribution after verifying both the architecture and Java major version.
+
+The resulting distribution is installed under:
+
+```text
+prebuilts/jdk/jdk8/linux-arm64/
+```
+
+See `scripts/import-jdk8-arm64.sh`.
+
 ## JDK 21
 
 JDK21 is produced from Google's published OpenJDK build sources and build script in `toolchain/jdk/build` and adapted for a native AArch64 Linux host.
@@ -67,7 +81,7 @@ platform/prebuilts/python/linux-arm64
 platform/prebuilts/build-tools
 ```
 
-The exact revisions are recorded in `components.toml` and the sample manifest under `manifests/`.
+Our monorepo is synced once and its Rust, JDK 8 and JDK 21 subdirectories are exposed at their AOSP-style locations with manifest `linkfile` entries. See `manifests/axion-arm64-prebuilts.xml`.
 
 ## Goal
 
