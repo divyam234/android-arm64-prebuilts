@@ -4,24 +4,37 @@
   <remote name="aosp-arm64" fetch="https://android.googlesource.com/" />
   <remote name="github-arm64" fetch="https://github.com/" />
 
-  <!--
-    prebuilts/build-tools at refs/tags/android-16.0.0_r4 already carries its tagged ARM64
-    subtree, so keep the Android tag's own project instead of mixing in a
-    newer mirror branch.
+  <!-- Google-maintained ARM64 host prebuilts: consume directly from AOSP. -->
+  <project path="prebuilts/clang/host/linux-arm64"
+           name="platform/prebuilts/clang/host/linux-arm64"
+           remote="aosp-arm64"
+           revision="1ab4a0aa701ef64db8a6e08a5995a369c008f600" />
 
-    Tools marked build-required in revisions.lock are provided by our
-    monorepo at the exact Android-tag-compatible versions.
-  -->
+  <project path="prebuilts/go/linux-arm64"
+           name="platform/prebuilts/go/linux-arm64"
+           remote="aosp-arm64"
+           revision="85088d1ab9a678cc8531f9cc05de9fa802f91c58" />
+
+  <project path="prebuilts/cmake/linux-arm64"
+           name="platform/prebuilts/cmake/linux-arm64"
+           remote="aosp-arm64"
+           revision="20526d417b6ca38b24bd4094eaaf528e2e4fb9e9" />
+
+  <project path="prebuilts/ninja/linux-arm64"
+           name="platform/prebuilts/ninja/linux-arm64"
+           remote="aosp-arm64"
+           revision="f5f1d6a3c3d46d64ec9d2a3f9535a01c7ec71168" />
+
+  <project path="prebuilts/python/linux-arm64"
+           name="platform/prebuilts/python/linux-arm64"
+           remote="aosp-arm64"
+           revision="e771c72074e9b17b6ccf15f8eee2755cac20dc27" />
+
+  <!-- Our repo only carries prebuilts missing from AOSP for this host setup. -->
   <project path="prebuilts/arm64-host"
            name="divyam234/android-arm64-prebuilts"
            remote="github-arm64"
            revision="main">
-    <linkfile src="prebuilts/clang/host/linux-arm64"
-              dest="prebuilts/clang/host/linux-arm64" />
-    <linkfile src="prebuilts/go/linux-arm64"
-              dest="prebuilts/go/linux-arm64" />
-    <linkfile src="prebuilts/cmake/linux-arm64"
-              dest="prebuilts/cmake/linux-arm64" />
     <linkfile src="prebuilts/rust-toolchain/linux-arm64"
               dest="prebuilts/rust-toolchain/linux-arm64" />
     <linkfile src="prebuilts/jdk/jdk8/linux-arm64"
