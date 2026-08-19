@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<manifest>
+  <!-- Linux ARM64 host prebuilts for Axion/Lineage. -->
+
+  <remote name="aosp-arm64"
+          fetch="https://android.googlesource.com/" />
+
+  <remote name="github-arm64"
+          fetch="https://github.com/" />
+
+  <!-- Use Google's native ARM64 prebuilts directly. -->
+  <project path="prebuilts/clang/host/linux-arm64"
+           name="platform/prebuilts/clang/host/linux-arm64"
+           remote="aosp-arm64"
+           revision="mirror-goog-main-prebuilts" />
+
+  <project path="prebuilts/go/linux-arm64"
+           name="platform/prebuilts/go/linux-arm64"
+           remote="aosp-arm64"
+           revision="mirror-goog-llvm-r596125-release" />
+
+  <project path="prebuilts/cmake/linux-arm64"
+           name="platform/prebuilts/cmake/linux-arm64"
+           remote="aosp-arm64"
+           revision="mirror-goog-main-prebuilts" />
+
+  <project path="prebuilts/ninja/linux-arm64"
+           name="platform/prebuilts/ninja/linux-arm64"
+           remote="aosp-arm64"
+           revision="mirror-goog-main-prebuilts" />
+
+  <project path="prebuilts/python/linux-arm64"
+           name="platform/prebuilts/python/linux-arm64"
+           remote="aosp-arm64"
+           revision="mirror-goog-llvm-r596125-release" />
+
+  <!--
+    Our monorepo is cloned once. linkfile supports directory symlink targets,
+    so repo sync exposes the two owned prebuilt trees at the paths expected by
+    Android without duplicating the Git repository.
+  -->
+  <project path="prebuilts/arm64-host"
+           name="divyam234/android-arm64-prebuilts"
+           remote="github-arm64"
+           revision="main">
+    <linkfile src="prebuilts/rust-toolchain/linux-arm64"
+              dest="prebuilts/rust-toolchain/linux-arm64" />
+    <linkfile src="prebuilts/jdk/jdk21/linux-arm64"
+              dest="prebuilts/jdk/jdk21/linux-arm64" />
+  </project>
+</manifest>
