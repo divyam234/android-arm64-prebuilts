@@ -11,11 +11,11 @@ Usage:
 
 Optional:
   HOST_TRIPLE=aarch64-unknown-linux-gnu
-  OUT_DIR=/path/to/output
   EXTRA_BUILD_ARGS='--host-only'
+  PREBUILT_DEST=/custom/output/path
 
-This wrapper intentionally does not guess the Android Rust revision or Rust
-version. Check out the revisions matching the ROM branch first.
+By default the completed toolchain is installed directly into:
+  prebuilts/rust-toolchain/linux-arm64
 EOF
 }
 
@@ -24,39 +24,51 @@ root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 : "${RUST_STAGE0:?set RUST_STAGE0 to native ARM64 stage0 Rust prebuilt}"
 : "${CLANG_PREBUILT:?set CLANG_PREBUILT to native AOSP ARM64 Clang prebuilt}"
 
+ANDROID_RUST_DIR="$(realpath "$ANDROID_RUST_DIR")"
+RUST_STAGE0="$(realpath "$RUST_STAGE0")"
+CLANG_PREBUILT="$(realpath "$CLANG_PREBUILT")"
+
 host="${HOST_TRIPLE:-aarch64-unknown-linux-gnu}"
-out="${OUT_DIR:-$root/out/rust}"
-mkdir -p "$out"
+dst="${PREBUILT_DEST:-$root/prebuilts/rust-toolchain/linux-arm64}"
 
 case "$(uname -m)" in
   aarch64|arm64) ;;
-  *) echo "error: this script is intended to produce native Linux ARM64 prebuilts" >&2; exit 2 ;;
+  *) echo "error: this script is intended for native Linux ARM64" >&2; exit 2 ;;
 esac
 
-if [[ ! -x "$RUST_STAGE0/bin/rustc" ]]; then
+[[ -x "$RUST_STAGE0/bin/rustc" ]] || {
   echo "error: $RUST_STAGE0/bin/rustc is not executable" >&2
   exit 2
-fi
+}
 
 stage0_host="$($RUST_STAGE0/bin/rustc -vV | awk '/^host:/ {print $2}')"
-if [[ "$stage0_host" != "$host" ]]; then
+[[ "$stage0_host" == "$host" ]] || {
   echo "error: stage0 Rust host is $stage0_host, expected $host" >&2
   exit 2
-fi
+}
 
-if [[ ! -x "$CLANG_PREBUILT/bin/clang" ]]; then
+[[ -x "$CLANG_PREBUILT/bin/clang" ]] || {
   echo "error: $CLANG_PREBUILT/bin/clang is not executable" >&2
   exit 2
-fi
+}
 
 build_py="$ANDROID_RUST_DIR/tools/build.py"
-if [[ ! -f "$build_py" ]]; then
+[[ -f "$build_py" ]] || {
   echo "error: $build_py not found" >&2
   usage
   exit 2
-fi
+}
+
+# android_rust defines WORKSPACE_PATH as toolchain/android_rust/../.. and puts
+# the unpacked package in <workspace>/out/package.
+rust_workspace="$(realpath "$ANDROID_RUST_DIR/../..")"
+package_dir="$rust_workspace/out/package"
+dist_dir="$rust_workspace/dist-arm64-rust"
 
 read -r -a extra <<<"${EXTRA_BUILD_ARGS:-}"
+
+rm -rf "$dist_dir"
+mkdir -p "$dist_dir"
 
 set -x
 python3 "$build_py" \
@@ -64,20 +76,29 @@ python3 "$build_py" \
   --rust-stage0-triple "$host" \
   --rust-prebuilt "$RUST_STAGE0" \
   --clang-prebuilt "$CLANG_PREBUILT" \
+  --dist "$dist_dir" \
   --llvm-linkage shared \
   --lto thin \
   --cgu1 \
   "${extra[@]}"
 set +x
 
-cat <<EOF
+[[ -x "$package_dir/bin/rustc" ]] || {
+  echo "error: Android Rust build completed but package is missing: $package_dir/bin/rustc" >&2
+  exit 1
+}
 
-Rust build completed.
+file -b "$package_dir/bin/rustc" | grep -Eqi 'aarch64|ARM64|ARM aarch64' || {
+  echo "error: generated rustc is not AArch64" >&2
+  file "$package_dir/bin/rustc" >&2 || true
+  exit 1
+}
 
-Next steps:
-  1. Locate the installed stage2 toolchain produced by android_rust.
-  2. Verify native executables with: file <toolchain>/bin/rustc
-  3. Import/package it into:
-       $root/prebuilts/rust-toolchain/linux-arm64
-  4. Record the exact android_rust/rustc commits before committing binaries.
-EOF
+rm -rf "$dst"
+mkdir -p "$(dirname "$dst")"
+cp -a "$package_dir" "$dst"
+
+"$root/scripts/check-prebuilt.sh" "$dst"
+"$root/scripts/track-large-files.sh"
+
+printf 'Installed Rust ARM64 prebuilt into %s\n' "$dst"

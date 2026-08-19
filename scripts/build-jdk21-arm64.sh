@@ -1,23 +1,5 @@
 #!/usr/bin/env bash
 # Native Linux AArch64 variant of AOSP toolchain/jdk/build/build-openjdk21-linux.sh.
-#
-# Run this from an Android checkout that contains:
-#   toolchain/jdk/jdk21
-#   toolchain/jdk/build
-#   prebuilts/clang/host/linux-arm64
-#
-# Required:
-#   BOOT_JDK=/path/to/aarch64/boot-jdk
-#
-# Optional:
-#   CLANG_REVISION=clang-r596125
-#   JDK_DEPS_DIR=/path/to/arm64/debs
-#   BUILD_NUMBER=0
-#   USE_PGO=0|1
-#
-# Usage:
-#   BOOT_JDK=/path/to/jdk ./scripts/build-jdk21-arm64.sh [-q] [-d DIST] BUILD_DIR
-
 set -euo pipefail
 
 prog="${0##*/}"
@@ -25,44 +7,39 @@ prog="${0##*/}"
 usage() {
   cat <<EOF
 Usage:
-  BOOT_JDK=/path/to/aarch64/jdk $prog [-q] [-d <dist_dir>] <build_dir>
+  ANDROID_BUILD_TOP=/path/to/android \
+  BOOT_JDK=/path/to/aarch64/jdk \
+  $prog
 
-Builds AOSP OpenJDK 21 natively for Linux AArch64 and optionally creates
-jdk.zip and jdk-debuginfo.zip in <dist_dir>.
+Optional:
+  CLANG_REVISION=clang-r596125
+  JDK_DEPS_DIR=/path/to/arm64/debs
+  BUILD_NUMBER=0
+  USE_PGO=0|1
+  BUILD_ROOT=/custom/build/workdir
+  PREBUILT_DEST=/custom/output/path
+  QUIET=1
+
+By default the completed JDK is installed directly into:
+  prebuilts/jdk/jdk21/linux-arm64
 EOF
-  exit 1
 }
 
-make_target_dir() {
-  mkdir -p "$1"
-  realpath "$1"
-}
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+: "${ANDROID_BUILD_TOP:?Set ANDROID_BUILD_TOP to the Android source checkout}"
+: "${BOOT_JDK:?Set BOOT_JDK to a native Linux AArch64 boot JDK}"
 
-while getopts 'qd:' opt; do
-  case "$opt" in
-    d) dist_dir=$(make_target_dir "$OPTARG") ;;
-    q) quiet=t ;;
-    *) usage ;;
-  esac
-done
-shift $((OPTIND - 1))
-[[ $# -eq 1 ]] || usage
+top="$(realpath "$ANDROID_BUILD_TOP")"
+BOOT_JDK="$(realpath "$BOOT_JDK")"
+build_root="${BUILD_ROOT:-$root/.work/jdk21}"
+dst="${PREBUILT_DEST:-$root/prebuilts/jdk/jdk21/linux-arm64}"
+sysroot="$build_root/sysroot"
+build_dir="$build_root/build"
 
-: "${BOOT_JDK:?Set BOOT_JDK to a native Linux AArch64 JDK usable for bootstrapping JDK21}"
-
-if [[ "$(uname -m)" != "aarch64" ]]; then
-  echo "error: this script is intended for a native aarch64 Linux host" >&2
-  exit 1
-fi
-
-out_path=$(make_target_dir "$1")
-sysroot="$out_path/sysroot"
-build_dir="$out_path/build"
-
-# ANDROID_BUILD_TOP is preferred. Otherwise assume this repository is checked
-# out somewhere inside the Android source tree and use the caller's cwd.
-top="${ANDROID_BUILD_TOP:-$(pwd)}"
-top=$(realpath "$top")
+case "$(uname -m)" in
+  aarch64|arm64) ;;
+  *) echo "error: this script is intended for native Linux ARM64" >&2; exit 1 ;;
+esac
 
 clang_revision="${CLANG_REVISION:-clang-r596125}"
 clang_bin="$top/prebuilts/clang/host/linux-arm64/$clang_revision/bin"
@@ -80,23 +57,25 @@ lib_triplet="aarch64-linux-gnu"
 }
 [[ -d "$deps_dir" ]] || {
   echo "error: ARM64 JDK dependency directory not found: $deps_dir" >&2
-  echo "Set JDK_DEPS_DIR to a directory containing the required arm64 .deb packages." >&2
   exit 1
 }
 
-file "$BOOT_JDK/bin/java" | grep -Eq 'ARM aarch64|ARM64|aarch64' || {
-  echo "error: BOOT_JDK/bin/java is not an AArch64 executable" >&2
+file -b "$BOOT_JDK/bin/java" | grep -Eqi 'aarch64|ARM64|ARM aarch64' || {
+  echo "error: BOOT_JDK/bin/java is not AArch64" >&2
   file "$BOOT_JDK/bin/java" >&2 || true
   exit 1
 }
+
+mkdir -p "$build_root"
+rm -rf "$sysroot" "$build_dir"
+mkdir -p "$sysroot" "$build_dir"
 
 unpack_dependencies() {
   local target_dir="$1"
   shift
   local ar="$clang_bin/llvm-ar"
-  mkdir -p "$target_dir"
-
   local deb member link target relative_target_dir relative_target
+
   for deb in "$@"; do
     member=$("$ar" -t "$deb" | grep -m1 '^data\.tar' || true)
     case "$member" in
@@ -104,12 +83,8 @@ unpack_dependencies() {
       data.tar.bz2) "$ar" -p "$deb" "$member" | (cd "$target_dir" && tar -jx) ;;
       data.tar.gz) "$ar" -p "$deb" "$member" | (cd "$target_dir" && tar -zx) ;;
       data.tar.zst) "$ar" -p "$deb" "$member" | (cd "$target_dir" && tar --zstd -x) ;;
-      *)
-        echo "error: $deb does not contain a supported data.tar archive" >&2
-        exit 1
-        ;;
+      *) echo "error: unsupported Debian archive: $deb" >&2; exit 1 ;;
     esac
-    [[ -n "${quiet:-}" ]] || echo "Unpacked $deb"
   done
 
   while IFS= read -r -d '' link; do
@@ -122,45 +97,29 @@ unpack_dependencies() {
 
 mapfile -t debs < <(find "$deps_dir" -maxdepth 1 -type f -name '*.deb' -print | sort)
 [[ ${#debs[@]} -gt 0 ]] || {
-  echo "error: no .deb dependencies found in $deps_dir" >&2
+  echo "error: no ARM64 .deb dependencies found in $deps_dir" >&2
   exit 1
 }
-rm -rf "$sysroot"
 unpack_dependencies "$sysroot" "${debs[@]}"
 
-# Debian multiarch directories must match the target architecture.
-for required in \
-  "$sysroot/usr/include" \
-  "$sysroot/usr/lib/$lib_triplet"; do
-  [[ -e "$required" ]] || {
-    echo "error: ARM64 sysroot is missing $required" >&2
-    exit 1
-  }
-done
-
-# AOSP's checked-in openjdk21.prof is optional for the ARM64 bootstrap. Start
-# without PGO unless explicitly enabled; once we have an ARM64 profile we can
-# make it the default.
-pgo_flags=()
-if [[ "${USE_PGO:-0}" == "1" ]]; then
-  [[ -f "$profdata" ]] || {
-    echo "error: USE_PGO=1 but profile not found: $profdata" >&2
-    exit 1
-  }
-  pgo_flags=("-fprofile-sample-use=$profdata")
-fi
+[[ -d "$sysroot/usr/lib/$lib_triplet" ]] || {
+  echo "error: ARM64 sysroot is missing usr/lib/$lib_triplet" >&2
+  exit 1
+}
 
 common_flags="--sysroot=$sysroot -fno-delete-null-pointer-checks -flto=full -gline-tables-only -fdebug-info-for-profiling -funique-internal-linkage-names"
-if [[ ${#pgo_flags[@]} -gt 0 ]]; then
-  common_flags+=" ${pgo_flags[*]}"
+if [[ "${USE_PGO:-0}" == "1" ]]; then
+  [[ -f "$profdata" ]] || { echo "error: PGO profile not found: $profdata" >&2; exit 1; }
+  common_flags+=" -fprofile-sample-use=$profdata"
 fi
 
-mkdir -p "$build_dir"
-[[ -n "${quiet:-}" ]] || set -x
+quiet_arg=()
+[[ "${QUIET:-0}" == "1" ]] && quiet_arg=(--quiet)
+
 (
   cd "$build_dir"
   bash +x "$top/toolchain/jdk/jdk21/configure" \
-    "${quiet:+--quiet}" \
+    "${quiet_arg[@]}" \
     --openjdk-target=aarch64-linux-gnu \
     --disable-full-docs \
     --disable-warnings-as-errors \
@@ -189,15 +148,25 @@ mkdir -p "$build_dir"
     AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip
 )
 
-make_log_level=${quiet:+warn}
-make -C "$build_dir" LOG="${make_log_level:-debug}" ${quiet:+-s} images
+make -C "$build_dir" LOG=$([[ "${QUIET:-0}" == "1" ]] && echo warn || echo debug) images
 
-[[ -n "${dist_dir:-}" ]] || exit 0
-rm -f "$dist_dir"/{jdk.zip,jdk-debuginfo.zip,build.log,configure.log}
-(
-  cd "$build_dir/images/jdk"
-  zip -9rDy${quiet:+q} "$dist_dir/jdk.zip" . -x 'demo/*' -x 'man/*' -x '*.debuginfo'
-  zip -9rDy${quiet:+q} "$dist_dir/jdk-debuginfo.zip" . -i '*.debuginfo'
-)
-[[ -e "$build_dir/build.log" ]] && cp "$build_dir/build.log" "$dist_dir/"
-[[ -e "$build_dir/configure-support/config.log" ]] && cp "$build_dir/configure-support/config.log" "$dist_dir/"
+image_dir="$build_dir/images/jdk"
+[[ -x "$image_dir/bin/java" ]] || {
+  echo "error: JDK build completed but $image_dir/bin/java is missing" >&2
+  exit 1
+}
+
+file -b "$image_dir/bin/java" | grep -Eqi 'aarch64|ARM64|ARM aarch64' || {
+  echo "error: generated JDK is not AArch64" >&2
+  file "$image_dir/bin/java" >&2 || true
+  exit 1
+}
+
+rm -rf "$dst"
+mkdir -p "$(dirname "$dst")"
+cp -a "$image_dir" "$dst"
+
+"$root/scripts/check-prebuilt.sh" "$dst"
+"$root/scripts/track-large-files.sh"
+
+printf 'Installed JDK21 ARM64 prebuilt into %s\n' "$dst"
