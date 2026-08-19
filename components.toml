@@ -1,6 +1,27 @@
 # Components maintained by this repository.
-# Compatibility baseline: refs/tags/android-16.0.0_r4.
-# Run scripts/update-revisions.sh to refresh exact source/ARM64 mirror SHAs.
+# Exact versions are resolved from AOSP_TAG by scripts/update-revisions.sh and
+# written to revisions.lock. Never substitute a newer ARM64 toolchain silently.
+
+[[component]]
+name = "clang"
+destination = "prebuilts/clang/host/linux-arm64"
+method = "aosp-exact-or-build"
+host = "aarch64-linux-gnu"
+notes = "Use Google's ARM64 prebuilt only if it contains the exact ClangDefaultVersion selected by the Android tag; otherwise build that exact revision."
+
+[[component]]
+name = "go"
+destination = "prebuilts/go/linux-arm64"
+method = "aosp-exact-or-build"
+host = "linux-arm64"
+notes = "Use Google's ARM64 prebuilt only when VERSION exactly matches the Android tag's linux-x86 Go VERSION; otherwise build the exact Go version."
+
+[[component]]
+name = "cmake"
+destination = "prebuilts/cmake/linux-arm64"
+method = "aosp-exact-or-build"
+host = "linux-arm64"
+notes = "Use Google's ARM64 prebuilt only when its CMake version exactly matches the tagged x86 prebuilt; otherwise build that exact version."
 
 [[component]]
 name = "rust-toolchain"
@@ -8,8 +29,7 @@ destination = "prebuilts/rust-toolchain/linux-arm64"
 source = "https://android.googlesource.com/toolchain/android_rust"
 method = "build"
 host = "aarch64-unknown-linux-gnu"
-compatibility_tag = "refs/tags/android-16.0.0_r4"
-notes = "Build with Google's Android Rust toolchain pipeline using native ARM64 stage0 Rust and AOSP ARM64 Clang."
+notes = "Build with Google's Android Rust toolchain pipeline using native ARM64 stage0 Rust and the exact compatible Clang."
 
 [[component]]
 name = "jdk8"
@@ -18,8 +38,7 @@ source = "https://android.googlesource.com/platform/prebuilts/jdk/jdk8"
 method = "import-native-jdk"
 host = "aarch64-linux"
 major_version = 8
-compatibility_tag = "refs/tags/android-16.0.0_r4"
-notes = "Import a native AArch64 JDK8 and validate it against the Android 16 JDK8 prebuilt revision recorded in revisions.lock."
+notes = "Import a pinned native Linux AArch64 JDK 8 distribution and preserve license/source metadata."
 
 [[component]]
 name = "jdk21"
@@ -28,5 +47,4 @@ source = "https://android.googlesource.com/toolchain/jdk/build"
 method = "build"
 host = "aarch64-linux-gnu"
 major_version = 21
-compatibility_tag = "refs/tags/android-16.0.0_r4"
-notes = "Native ARM64 adaptation of AOSP build-openjdk21-linux.sh using the Android 16 compatibility baseline and exact revisions from revisions.lock."
+notes = "Native ARM64 adaptation of AOSP build-openjdk21-linux.sh using the exact compatible Clang, boot JDK and ARM64 sysroot dependencies."
