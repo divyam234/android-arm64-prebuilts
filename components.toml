@@ -23,8 +23,9 @@ notes = "Import a pinned native Linux AArch64 JDK 8 distribution and preserve li
 [[component]]
 name = "jdk21"
 destination = "prebuilts/jdk/jdk21/linux-arm64"
-source = "https://android.googlesource.com/toolchain/jdk/build"
-method = "build"
-host = "aarch64-linux-gnu"
+source = "https://github.com/adoptium/temurin21-binaries"
+method = "download-verified-prebuilt"
+host = "aarch64-linux"
 major_version = 21
-notes = "Native ARM64 adaptation of AOSP build-openjdk21-linux.sh using AOSP ARM64 Clang, boot JDK and ARM64 sysroot dependencies."
+version = "21.0.4+7"
+notes = "Populate a verified Temurin Linux AArch64 JDK 21.0.4+7, matching the Java 21.0.4 update level used by refs/tags/android-16.0.0_r4."

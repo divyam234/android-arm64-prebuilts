@@ -1,12 +1,12 @@
 # android-arm64-prebuilts
 
-Linux ARM64 host prebuilts needed for building Android/AOSP-derived ROMs natively on AArch64 Linux hosts.
+Linux ARM64 host prebuilts needed to build Android/AOSP-derived ROMs natively on AArch64 Linux hosts.
 
-This repository stores only the prebuilts we need to maintain ourselves. Large files are tracked with Git LFS.
+This repository stores the actual prebuilts in Git. Large binaries are tracked with Git LFS; GitHub Release assets are not used.
 
 ## Baseline
 
-The default compatibility baseline is:
+The default Android compatibility baseline is:
 
 ```text
 refs/tags/android-16.0.0_r4
@@ -18,11 +18,11 @@ Run:
 ./scripts/update-revisions.sh
 ```
 
-to refresh `revisions.lock` and regenerate the sample manifest.
+to refresh the pinned AOSP ARM64 tool revisions in `revisions.lock` and regenerate the Axion local manifest.
 
 ## What comes directly from AOSP
 
-Do not mirror these into this repository:
+These are not mirrored here:
 
 ```text
 prebuilts/clang/host/linux-arm64
@@ -33,9 +33,11 @@ prebuilts/python/linux-arm64
 prebuilts/build-tools
 ```
 
-The generated Axion manifest pulls them from AOSP directly.
+The generated manifest pulls them directly from Google.
 
-## What this repository owns
+## What this repo provides
+
+Only these generated paths are owned here:
 
 ```text
 prebuilts/
@@ -48,28 +50,20 @@ prebuilts/
         └── linux-arm64/
 ```
 
-The directories are created automatically only when a real prebuilt is generated or imported.
-
-## Automatic output
-
-You do not need to provide an output directory for normal use.
-
-Each script replaces and populates its standard AOSP-style destination automatically, verifies the resulting binaries are ARM64, and runs the Git LFS tracker afterward.
-
-An optional `PREBUILT_DEST=/custom/path` override exists only for testing.
+The directories are created only when the corresponding prebuilt is populated.
 
 ## Rust
 
-Rust is built with Google's Android Rust toolchain pipeline from `toolchain/android_rust`, using a native `aarch64-unknown-linux-gnu` stage0 compiler and AOSP ARM64 Clang.
+Rust uses Google's `toolchain/android_rust` build pipeline with an ARM64 stage0 compiler and AOSP ARM64 Clang.
 
 ```bash
-ANDROID_RUST_DIR=/path/to/android/toolchain/android_rust \
+ANDROID_RUST_DIR=/path/to/toolchain/android_rust \
 RUST_STAGE0=/path/to/aarch64-stage0 \
 CLANG_PREBUILT=/path/to/aosp-arm64-clang \
 ./scripts/build-rust.sh
 ```
 
-On success it automatically installs the generated package into:
+The completed package is installed automatically into:
 
 ```text
 prebuilts/rust-toolchain/linux-arm64/
@@ -83,7 +77,7 @@ JDK8 currently uses a validated native AArch64 import flow:
 ./scripts/import-jdk8-arm64.sh /path/to/jdk8-aarch64 <source-id>
 ```
 
-It automatically replaces and populates:
+It installs directly into:
 
 ```text
 prebuilts/jdk/jdk8/linux-arm64/
@@ -91,21 +85,26 @@ prebuilts/jdk/jdk8/linux-arm64/
 
 ## JDK 21
 
-JDK21 is built from Google's OpenJDK source/build logic in `toolchain/jdk`, adapted for native Linux AArch64.
+Android 16 r4 ships Java **21.0.4** for its Linux x86 host prebuilt. Google's public Android 16 JDK21 tree does not include a Linux ARM64 directory, so this repository uses the matching public Temurin **21.0.4+7** AArch64 JDK.
+
+Just run:
 
 ```bash
-ANDROID_BUILD_TOP=/path/to/android \
-BOOT_JDK=/path/to/aarch64/boot-jdk \
 ./scripts/build-jdk21-arm64.sh
 ```
 
-The temporary build directory defaults to `.work/jdk21` and the completed JDK is automatically copied into:
+The script automatically:
 
-```text
-prebuilts/jdk/jdk21/linux-arm64/
-```
+- downloads the Linux AArch64 JDK,
+- downloads and verifies its SHA-256,
+- verifies `bin/java` is AArch64,
+- verifies the Java version is 21.0.4,
+- installs it directly into `prebuilts/jdk/jdk21/linux-arm64/`,
+- writes source metadata,
+- checks for accidental x86 host binaries,
+- enables Git LFS tracking for large files.
 
-Optional overrides include `BUILD_ROOT`, `JDK_DEPS_DIR`, `CLANG_REVISION`, and `PREBUILT_DEST`.
+No Android checkout, boot JDK, Clang path, or output directory is required.
 
 ## Git LFS
 
@@ -115,7 +114,7 @@ Large generated files are tracked automatically by:
 ./scripts/track-large-files.sh
 ```
 
-A checkout that consumes this repository should have Git LFS installed:
+A checkout consuming this repository should have Git LFS installed:
 
 ```bash
 git lfs install
@@ -126,10 +125,10 @@ git lfs pull
 
 `manifests/axion-arm64-prebuilts.xml`:
 
-1. pulls Google-maintained ARM64 host prebuilts directly from AOSP;
+1. pulls Google-maintained ARM64 host tools directly from AOSP;
 2. clones this repository once;
-3. exposes Rust, JDK8, and JDK21 at their normal AOSP paths with `linkfile` directory links.
+3. exposes Rust, JDK8 and JDK21 at their normal Android paths with directory `linkfile` entries.
 
 ## Goal
 
-The final Android source tree should run all build-host tools natively on Linux ARM64 without x86 emulation and without duplicating Google-maintained prebuilts.
+The final Android source tree should run host build tools natively on Linux ARM64 without x86 emulation and without unnecessarily mirroring Google-maintained prebuilts.

@@ -1,6 +1,7 @@
 out/
 .cache/
 .tmp/
+.work/
 *.tar
 *.tar.gz
 *.tar.xz

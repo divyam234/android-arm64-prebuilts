@@ -1,0 +1,8 @@
+baseline=refs/tags/android-16.0.0_r4
+baseline_aosp_java_version=21.0.4
+source=Eclipse Adoptium Temurin
+source_url=https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.4%2B7/OpenJDK21U-jdk_aarch64_linux_hotspot_21.0.4_7.tar.gz
+source_sha256=d768eecddd7a515711659e02caef8516b7b7177fa34880a56398fd9822593a79
+java_version=21.0.4
+host=aarch64-linux
+imported_by=scripts/build-jdk21-arm64.sh
