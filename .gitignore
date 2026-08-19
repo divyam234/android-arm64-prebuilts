@@ -1,0 +1,7 @@
+out/
+.cache/
+.tmp/
+*.tar
+*.tar.gz
+*.tar.xz
+*.zip

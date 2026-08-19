@@ -1,0 +1,63 @@
+# Pinned upstream sources for Linux ARM64 host prebuilts.
+
+[[component]]
+name = "clang"
+destination = "prebuilts/clang/host/linux-arm64"
+repo = "https://android.googlesource.com/platform/prebuilts/clang/host/linux-arm64"
+ref = "mirror-goog-main-prebuilts"
+commit = "1ab4a0aa701ef64db8a6e08a5995a369c008f600"
+
+[[component]]
+name = "go"
+destination = "prebuilts/go/linux-arm64"
+repo = "https://android.googlesource.com/platform/prebuilts/go/linux-arm64"
+ref = "mirror-goog-llvm-r596125-release"
+commit = "85088d1ab9a678cc8531f9cc05de9fa802f91c58"
+
+[[component]]
+name = "cmake"
+destination = "prebuilts/cmake/linux-arm64"
+repo = "https://android.googlesource.com/platform/prebuilts/cmake/linux-arm64"
+ref = "mirror-goog-main-prebuilts"
+commit = "20526d417b6ca38b24bd4094eaaf528e2e4fb9e9"
+
+[[component]]
+name = "ninja"
+destination = "prebuilts/ninja/linux-arm64"
+repo = "https://android.googlesource.com/platform/prebuilts/ninja/linux-arm64"
+ref = "mirror-goog-main-prebuilts"
+commit = "f5f1d6a3c3d46d64ec9d2a3f9535a01c7ec71168"
+
+[[component]]
+name = "python"
+destination = "prebuilts/python/linux-arm64"
+repo = "https://android.googlesource.com/platform/prebuilts/python/linux-arm64"
+ref = "mirror-goog-llvm-r596125-release"
+commit = "e771c72074e9b17b6ccf15f8eee2755cac20dc27"
+
+[[component]]
+name = "build-tools"
+destination = "prebuilts/build-tools"
+repo = "https://android.googlesource.com/platform/prebuilts/build-tools"
+ref = "mirror-goog-main-prebuilts"
+commit = "d95cf4dae352be7875dc4b473adc24fdce613078"
+
+# Rust ARM64 repository currently has no populated equivalent of the mirror prebuilt branches.
+# It will be produced from Google's Android Rust toolchain build pipeline.
+[[component]]
+name = "rust-toolchain"
+destination = "prebuilts/rust-toolchain/linux-arm64"
+repo = "https://android.googlesource.com/platform/prebuilts/rust-toolchain/linux-arm64"
+ref = "main"
+commit = "5bf291b6aaecfab10b2012dc6cbd7316578d321c"
+build_required = true
+
+# Axion/Lineage 23.2 expects JDK 21. The AOSP jdk21 tree does not currently provide
+# a directly usable linux-arm64 directory, so this component is built/imported separately.
+[[component]]
+name = "jdk21"
+destination = "prebuilts/jdk/jdk21/linux-arm64"
+repo = "https://android.googlesource.com/platform/prebuilts/jdk/jdk21"
+ref = "mirror-goog-main-prebuilts"
+commit = "fab99e00da31aa450047279ee6c1671a21a1bc48"
+build_required = true
